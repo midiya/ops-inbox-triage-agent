@@ -1,0 +1,14 @@
+# Upper bounds are deliberate: a major release of any of these can change
+# behaviour, and an unpinned `>=` means a clean install six months from now may
+# not be the software this was tested against.
+
+openai>=3.0.0,<4
+pydantic>=2.13,<3
+python-dotenv>=1.0,<2
+httpx>=0.28,<1
+
+# Needed by service.py, the HTTP front door. These were missing, so a fresh
+# `pip install -r requirements.txt` followed by the documented uvicorn command
+# failed on any machine that did not already happen to have them.
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
