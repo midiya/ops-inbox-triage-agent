@@ -1,0 +1,60 @@
+name: tests
+
+# Runs on every push and every pull request. There is no schedule and no manual
+# trigger: the point is that nobody has to remember to run this.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Three versions, because "it works on my machine" is the failure this is
+    # here to prevent. The code is developed on 3.14; if it quietly depends on
+    # something newer than 3.11, this is where that shows up.
+    strategy:
+      fail-fast: false      # report every version, not just the first failure
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # This step is a test in itself. The runner is a clean machine, so a
+      # dependency missing from requirements.txt fails here rather than silently
+      # working because a developer happened to have it installed already.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Every suite is offline: no API key, no network, no secrets configured in
+      # this repository. That is a property of the design, not a convenience -
+      # the decision logic lives in pure functions, so it can be verified without
+      # calling anything. A project whose rules lived inside the API call could
+      # not have this workflow at all.
+      - name: Routing policy
+        run: python tests/test_router.py
+
+      - name: Retry, backoff and dead-letter queue
+        run: python tests/test_reliability.py
+
+      - name: Access token and spend ceiling
+        run: python tests/test_guard.py
+
+      - name: Estimate parsing
+        run: python tests/test_estimates.py
+
+      # Importing the package must not require credentials. If this fails, some
+      # module has started reading config at import time, which would also break
+      # every test above on a fresh checkout.
+      - name: Package imports without credentials
+        run: |
+          python -c "import triage.schemas, triage.router, triage.estimates, triage.guard, triage.reliability, triage.exceptions; print('ok')"
