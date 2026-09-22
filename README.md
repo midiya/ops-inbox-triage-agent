@@ -1,5 +1,7 @@
 # Ops Inbox Triage Agent
 
+[![tests](https://github.com/midiya/ops-inbox-triage-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/midiya/ops-inbox-triage-agent/actions/workflows/tests.yml)
+
 Turns a free-text internal support request into a correctly filed, correctly
 prioritised Jira ticket — reliably, with a deliberate escape hatch for anything
 it should not decide on its own.
@@ -81,6 +83,7 @@ on it.
 | | |
 |---|---|
 | Offline tests, no API key needed | 110 (18 routing, 24 reliability, 17 access/spend guard, 51 estimate parsing) |
+| Run automatically on every push | Python 3.11, 3.12 and 3.13, no secrets configured |
 | Real output usage vs. configured ceiling | 55–83 tokens vs. 800 |
 | Input tokens per call, of which the ticket is | ~1,045, of which ~10 |
 | Persian vs. English token cost, same content | 3.05 vs. 4.85 chars/token (~1.6×) |
@@ -124,7 +127,11 @@ python tests/test_guard.py
 python tests/test_estimates.py
 ```
 
-All four run offline with no key and no network.
+All four run offline with no key and no network. That is also how CI runs them:
+GitHub Actions executes every suite on three Python versions on each push, with
+no secrets configured for the workflow. It is possible only because the decision
+logic lives in pure functions - a design that kept those rules inside the API
+call could not be tested this way at all.
 
 ---
 
